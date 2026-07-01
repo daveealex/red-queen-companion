@@ -1,6 +1,6 @@
 [Unit]
-Description=Atlas AI Companion — Voice-driven AI face on Raspberry Pi 5
-After=network-online.target sound.target bluetooth.service
+Description=Red Queen AI Companion
+After=network-online.target sound.target
 Wants=network-online.target
 
 [Service]
@@ -11,25 +11,18 @@ WorkingDirectory=/home/daveealex/ai-companion
 Environment=PATH=/home/daveealex/ai-companion/venv/bin:/usr/local/bin:/usr/bin:/bin
 Environment=WEB_SERVER_URL=http://localhost:5000
 Environment=DISPLAY=:0
+Environment=CHROMIUM_FLAGS=--kiosk --no-first-run --disable-gpu --disable-features=TranslateUI,Notifications
 
-# Start the web server, then chromium kiosk, then orchestrator
 ExecStartPre=/bin/sleep 2
-ExecStart=/bin/bash -c 'cd /home/daveealex/ai-companion && source venv/bin/activate && python3 web/server.py &'
-ExecStartPost=/bin/sleep 2
-ExecStart=/bin/bash -c 'cd /home/daveealex/ai-companion && chromium-browser --kiosk --no-first-run --disable-features=TranslateUI http://localhost:5000 &'
-ExecStartPost=/bin/sleep 3
-ExecStart=/bin/bash -c 'cd /home/daveealex/ai-companion && source venv/bin/activate && python3 orchestrator.py'
+ExecStart=/home/daveealex/ai-companion/scripts/launch.sh
 
 Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=atlas-companion
+SyslogIdentifier=red-queen-companion
 
-# Need audio and display access
-AmbientCapabilities=CAP_AUDIO
-# Allow Chromium to run headless
-Environment=CHROMIUM_FLAGS=--kiosk --no-first-run --disable-gpu --disable-features=TranslateUI,Notifications
+AmbientCapabilities=CAP_SYS_NICE
 
 [Install]
 WantedBy=multi-user.target

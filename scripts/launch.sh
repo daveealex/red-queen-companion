@@ -1,5 +1,5 @@
 #!/bin/bash
-# Atlas Companion — Launch Script
+# Red Queen AI Companion — Launch Script
 # Starts the web server, then opens Chromium kiosk, then starts the orchestrator.
 # Run from the ai-companion directory.
 
@@ -9,9 +9,11 @@ PROJECT_DIR="$HOME/ai-companion"
 cd "$PROJECT_DIR"
 
 GREEN='\033[0;32m'
+RED='\033[0;31m'
 NC='\033[0m'
 
-log() { echo -e "${GREEN}[LAUNCH]${NC} $1"; }
+log() { echo -e "${GREEN}[RED QUEEN]${NC} $1"; }
+err() { echo -e "${RED}[RED QUEEN]${NC} $1"; }
 
 log "Activating virtualenv..."
 source venv/bin/activate
