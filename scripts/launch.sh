@@ -32,7 +32,7 @@ fi
 log "Web server running (PID $WEB_PID)"
 
 log "Starting Chromium kiosk mode..."
-chromium-browser --kiosk --no-first-run --disable-features=TranslateUI,Notifications http://localhost:5000 &
+chromium --kiosk --no-first-run --disable-features=TranslateUI,Notifications http://localhost:5000 &
 CHROMIUM_PID=$!
 sleep 3
 log "Chromium launched (PID $CHROMIUM_PID)"

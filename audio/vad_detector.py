@@ -19,7 +19,9 @@ Usage:
     vad.stop()
 """
 
+import json
 import numpy as np
+import os
 import sounddevice as sd
 import onnxruntime as ort
 import threading
@@ -32,9 +34,6 @@ logger = logging.getLogger(__name__)
 
 class VADDetector:
     """Silero VAD-based voice activity detector."""
-
-    # Silero VAD ONNX model URL
-    VAD_MODEL_URL = "https://github.com/snakers4/silero-vad/files/14317297/silero_vad.onnx"
 
     def __init__(self, config: dict):
         self.sample_rate = config.get("sample_rate", 16000)
@@ -61,18 +60,18 @@ class VADDetector:
         self.chunk_size = 512  # 32ms at 16kHz
 
     def _init_vad(self):
-        """Load the Silero VAD ONNX model."""
+        """Load the Silero VAD ONNX model (bundled with project)."""
         try:
-            import urllib.request
-            import os
-            
-            model_path = os.path.expanduser("~/.cache/silero_vad.onnx")
+            # Use bundled model from assets directory
+            model_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "assets",
+                "silero_vad.onnx"
+            )
+
             if not os.path.exists(model_path):
-                logger.info("Downloading Silero VAD model...")
-                os.makedirs(os.path.dirname(model_path), exist_ok=True)
-                urllib.request.urlretrieve(self.VAD_MODEL_URL, model_path)
-                logger.info("VAD model downloaded.")
-            
+                raise FileNotFoundError(f"VAD model not found at {model_path}")
+
             session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
             logger.info("Silero VAD model loaded.")
             return session
