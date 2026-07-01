@@ -27,6 +27,7 @@ audio:
   vad_buffer_ms: 500            # Pre-roll buffer (ms)
   sample_rate: 16000
   channels: 1
+  mic_device: 2  # Creative Live! Cam Sync 1080p V2
   
   # Audio recording
   recording_duration: 5000      # Max recording duration (ms) after speech detected
