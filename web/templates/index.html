@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red Queen — AI Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0f0f19;
+            color: #fff;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Face Container */
+        #face-container {
+            position: relative;
+            width: 500px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s ease;
+        }
+
+        /* Eyes */
+        #eyes {
+            display: flex;
+            gap: 100px;
+            margin-bottom: 60px;
+            transition: all 0.3s ease;
+        }
+
+        .eye {
+            width: 70px;
+            height: 70px;
+            background: #fff;
+            border-radius: 50%;
+            position: relative;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .eye .pupil {
+            width: 28px;
+            height: 28px;
+            background: #111;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.15s ease;
+        }
+
+        .eye .pupil::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            position: absolute;
+            top: 4px;
+            right: 4px;
+        }
+
+        /* Blink animation */
+        @keyframes blink {
+            0%, 95%, 100% { transform: scaleY(1); }
+            97% { transform: scaleY(0.05); }
+        }
+
+        .eye.blinking {
+            animation: blink 0.3s ease;
+        }
+
+        /* Mouth */
+        #mouth-container {
+            width: 200px;
+            height: 60px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #mouth {
+            width: 100px;
+            height: 20px;
+            border-bottom: 4px solid #fff;
+            border-radius: 0 0 50px 50px;
+            transition: all 0.1s ease;
+        }
+
+        #mouth-waveform {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            height: 40px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 3px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        #mouth-waveform.active {
+            opacity: 1;
+        }
+
+        .wave-bar {
+            width: 4px;
+            background: #fff;
+            border-radius: 2px;
+            transition: height 0.05s ease;
+            min-height: 4px;
+        }
+
+        /* State-specific eye styles */
+        .eye-listening {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+        }
+
+        .eye-thinking {
+            animation: lookAround 2s ease infinite;
+        }
+
+        @keyframes lookAround {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        .eye-speaking {
+            transform: scale(0.95);
+        }
+
+        .eye-happy {
+            height: 30px;
+            border-radius: 50px;
+        }
+
+        .eye-confused {
+            transform: translateY(-5px);
+        }
+
+        /* State-specific mouth styles */
+        .mouth-listening {
+            height: 10px;
+            border-radius: 0 0 50px 50px;
+        }
+
+        .mouth-thinking {
+            height: 6px;
+            border-radius: 0 0 50px 50px;
+        }
+
+        .mouth-speaking {
+            animation: mouthSpeak 0.1s ease infinite alternate;
+        }
+
+        @keyframes mouthSpeak {
+            0% { height: 10px; }
+            100% { height: 40px; }
+        }
+
+        .mouth-happy {
+            height: 30px;
+            border-radius: 0 0 60px 60px;
+        }
+
+        .mouth-confused {
+            border-radius: 50% 50% 5px 5px;
+            border-bottom: none;
+            border-top: 4px solid #fff;
+        }
+
+        /* Idle breathing animation */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.02); opacity: 1; }
+        }
+
+        #face-container.idle {
+            animation: breathe 4s ease infinite;
+        }
+
+        /* Content area (below face) */
+        #content-area {
+            width: 90%;
+            max-width: 900px;
+            min-height: 100px;
+            max-height: 40vh;
+            overflow-y: auto;
+            padding: 20px;
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        #content-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #content-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #content-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        #content-area img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        #content-area pre {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+
+        #content-area code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        #content-area table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        #content-area th, #content-area td {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px;
+            text-align: left;
+        }
+
+        #content-area th {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Status indicator */
+        #status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        #status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s ease infinite;
+        }
+
+        /* Settings button */
+        #settings-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        #settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        /* Settings panel */
+        #settings-panel {
+            position: fixed;
+            top: 65px;
+            left: 20px;
+            width: 280px;
+            background: rgba(15, 15, 25, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 16px;
+            display: none;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        #settings-panel.visible {
+            display: block;
+        }
+
+        #settings-panel h3 {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+
+        .settings-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .settings-value {
+            font-size: 13px;
+            color: #fff;
+            font-weight: 500;
+        }
+
+        #clear-context-btn {
+            width: 100%;
+            margin-top: 12px;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 8px;
+            color: #fca5a5;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #clear-context-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+            color: #fff;
+        }
+
+        #clear-context-btn:active {
+            transform: scale(0.98);
+        }
+
+        #clear-context-btn.cleared {
+            background: rgba(74, 222, 128, 0.2);
+            border-color: rgba(74, 222, 128, 0.4);
+            color: #4ade80;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Listening indicator */
+        .listening-ring {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 200px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .listening-ring.active {
+            opacity: 1;
+            animation: ringPulse 1.5s ease infinite;
+        }
+
+        @keyframes ringPulse {
+            0% { transform: translateX(-50%) scale(1); opacity: 0.3; }
+            100% { transform: translateX(-50%) scale(1.3); opacity: 0; }
+        }
+
+        /* MathJax / KaTeX support */
+        .math-display {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <!-- Settings Button -->
+    <button id="settings-btn" title="Settings">⚙</button>
+    <div id="settings-panel">
+        <h3>Context</h3>
+        <div class="settings-row">
+            <span class="settings-label">Turns</span>
+            <span class="settings-value" id="stats-turns">-</span>
+        </div>
+        <div class="settings-row">
+            <span class="settings-label">Messages</span>
+            <span class="settings-value" id="stats-messages">-</span>
+        </div>
+        <div class="settings-row">
+            <span class="settings-label">Max Turns</span>
+            <span class="settings-value" id="stats-max-turns">-</span>
+        </div>
+        <div class="settings-row">
+            <span class="settings-label">Auto-Clear</span>
+            <span class="settings-value" id="stats-auto-clear">-</span>
+        </div>
+        <button id="clear-context-btn">Clear Conversation</button>
+        <h3 style="margin-top: 16px;">Inference Server</h3>
+        <div class="settings-row">
+            <span class="settings-label">Mode</span>
+            <span class="settings-value" id="inference-mode">local</span>
+        </div>
+        <div class="settings-row">
+            <span class="settings-label">Server IP</span>
+            <input type="text" id="external-ip" placeholder="192.168.1.X" style="width: 120px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+        </div>
+        <div class="settings-row">
+            <span class="settings-label">Port</span>
+            <input type="text" id="external-port" placeholder="13305" style="width: 80px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+        </div>
+        <div class="settings-row">
+            <span class="settings-label">Model</span>
+            <input type="text" id="external-model" placeholder="model-name" style="width: 140px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+        </div>
+        <button id="save-inference-btn" style="width: 100%; margin-top: 8px; padding: 8px; background: rgba(74, 222, 128, 0.2); border: 1px solid rgba(74, 222, 128, 0.4); border-radius: 8px; color: #4ade80; font-size: 12px; cursor: pointer;">Save Inference Settings</button>
+    </div>
+
+    <!-- Status -->
+    <div id="status">
+        <div id="status-dot"></div>
+        <span id="status-text">Idle</span>
+    </div>
+
+    <!-- Face -->
+    <div id="face-container" class="idle">
+        <div class="listening-ring" id="listening-ring"></div>
+        <div id="eyes">
+            <div class="eye" id="eye-left">
+                <div class="pupil" id="pupil-left"></div>
+            </div>
+            <div class="eye" id="eye-right">
+                <div class="pupil" id="pupil-right"></div>
+            </div>
+        </div>
+        <div id="mouth-container">
+            <div id="mouth"></div>
+            <div id="mouth-waveform">
+                <!-- Waveform bars generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    <div id="content-area">
+        <p style="color: rgba(255,255,255,0.4); text-align: center;">
+            👋 Hey! I'm Red Queen. Talk to me!
+        </p>
+    </div>
+
+    <!-- KaTeX for math (loaded from CDN) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <script>
+        // ─── State ───
+        const state = {
+            current: 'idle',
+            target: 'idle',
+            isSpeaking: false,
+            isListening: false,
+        };
+
+        // ─── DOM refs ───
+        const face = document.getElementById('face-container');
+        const eyes = document.getElementById('eyes');
+        const leftEye = document.getElementById('eye-left');
+        const rightEye = document.getElementById('eye-right');
+        const leftPupil = document.getElementById('pupil-left');
+        const rightPupil = document.getElementById('pupil-right');
+        const mouth = document.getElementById('mouth');
+        const waveform = document.getElementById('mouth-waveform');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+        const contentArea = document.getElementById('content-area');
+        const listeningRing = document.getElementById('listening-ring');
+
+        // ─── Waveform bars ───
+        for (let i = 0; i < 30; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'wave-bar';
+            bar.style.height = '4px';
+            waveform.appendChild(bar);
+        }
+        const waveBars = waveform.querySelectorAll('.wave-bar');
+
+        // ─── Blink system ───
+        let blinkTimer = Math.random() * 4000 + 2000;
+        let isBlinking = false;
+
+        function blink() {
+            if (isBlinking) return;
+            isBlinking = true;
+            leftEye.classList.add('blinking');
+            rightEye.classList.add('blinking');
+            setTimeout(() => {
+                leftEye.classList.remove('blinking');
+                rightEye.classList.remove('blinking');
+                isBlinking = false;
+            }, 200);
+        }
+
+        // ─── Animation loop ───
+        let lastFrame = performance.now();
+        function animate(now) {
+            // Blink timer
+            blinkTimer -= (now - lastFrame);
+            if (blinkTimer <= 0 && !isBlinking) {
+                blink();
+                blinkTimer = Math.random() * 4000 + 2000;
+            }
+            lastFrame = now;
+
+            // Update pupil position (track nothing by default, just subtle movement)
+            if (state.current === 'thinking') {
+                const t = now / 1000;
+                leftPupil.style.transform = `translate(calc(-50% + ${Math.sin(t * 2) * 8}px), calc(-50% + ${Math.cos(t * 1.5) * 4}px))`;
+                rightPupil.style.transform = `translate(calc(-50% + ${Math.sin(t * 2 + 1) * 8}px), calc(-50% + ${Math.cos(t * 1.5 + 1) * 4}px))`;
+            } else {
+                leftPupil.style.transform = 'translate(-50%, -50%)';
+                rightPupil.style.transform = 'translate(-50%, -50%)';
+            }
+
+            // Waveform animation during speaking
+            if (state.isSpeaking) {
+                waveform.classList.add('active');
+                waveBars.forEach((bar, i) => {
+                    const h = Math.random() * 30 + 4;
+                    bar.style.height = h + 'px';
+                });
+            } else {
+                waveform.classList.remove('active');
+            }
+
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+
+        // ─── State machine ───
+        function setFaceState(newState) {
+            state.target = newState;
+
+            // Remove old state classes
+            face.className = '';
+            leftEye.className = 'eye';
+            rightEye.className = 'eye';
+            mouth.className = '';
+            listeningRing.classList.remove('active');
+
+            // Apply new state
+            switch (newState) {
+                case 'idle':
+                    face.classList.add('idle');
+                    statusText.textContent = 'Idle';
+                    statusDot.style.background = '#4ade80';
+                    break;
+                case 'listening':
+                    leftEye.classList.add('eye-listening');
+                    rightEye.classList.add('eye-listening');
+                    mouth.classList.add('mouth-listening');
+                    listeningRing.classList.add('active');
+                    statusText.textContent = 'Listening...';
+                    statusDot.style.background = '#60a5fa';
+                    state.isListening = true;
+                    break;
+                case 'thinking':
+                    leftEye.classList.add('eye-thinking');
+                    rightEye.classList.add('eye-thinking');
+                    mouth.classList.add('mouth-thinking');
+                    statusText.textContent = 'Thinking...';
+                    statusDot.style.background = '#a78bfa';
+                    state.isListening = false;
+                    state.isSpeaking = false;
+                    break;
+                case 'speaking':
+                    leftEye.classList.add('eye-speaking');
+                    rightEye.classList.add('eye-speaking');
+                    mouth.classList.add('mouth-speaking');
+                    state.isSpeaking = true;
+                    statusText.textContent = 'Speaking...';
+                    statusDot.style.background = '#f59e0b';
+                    state.isListening = false;
+                    break;
+                case 'happy':
+                    leftEye.classList.add('eye-happy');
+                    rightEye.classList.add('eye-happy');
+                    mouth.classList.add('mouth-happy');
+                    statusText.textContent = 'Happy';
+                    statusDot.style.background = '#f472b6';
+                    break;
+                case 'confused':
+                    leftEye.classList.add('eye-confused');
+                    rightEye.classList.add('eye-confused');
+                    mouth.classList.add('mouth-confused');
+                    statusText.textContent = 'Hmm?';
+                    statusDot.style.background = '#fbbf24';
+                    break;
+            }
+
+            state.current = newState;
+        }
+
+        // ─── Content injection ───
+        function injectContent(html) {
+            contentArea.innerHTML = html;
+
+            // Render KaTeX math
+            if (typeof renderMathInElement === 'function') {
+                renderMathInElement(contentArea, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                    ],
+                });
+            }
+        }
+
+        function addContent(html) {
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            contentArea.appendChild(div);
+
+            if (typeof renderMathInElement === 'function') {
+                renderMathInElement(contentArea, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                    ],
+                });
+            }
+        }
+
+        // ─── WebSocket / SSE connection to Flask server ───
+        function connectToServer() {
+            // Try EventSource (Server-Sent Events)
+            const evtSource = new EventSource('/stream');
+
+            evtSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleServerEvent(data);
+                } catch (e) {
+                    console.error('Parse error:', e);
+                }
+            };
+
+            evtSource.onerror = function() {
+                console.error('EventSource failed, falling back to polling');
+                startPolling();
+            };
+        }
+
+        // Fallback: polling
+        function startPolling() {
+            setInterval(async () => {
+                try {
+                    const resp = await fetch('/api/status');
+                    const data = await resp.json();
+                    handleServerEvent(data);
+                } catch (e) {
+                    console.error('Poll error:', e);
+                }
+            }, 500);
+        }
+
+        function handleServerEvent(data) {
+            if (data.state) {
+                setFaceState(data.state);
+            }
+            if (data.content) {
+                injectContent(data.content);
+            }
+            if (data.append) {
+                addContent(data.append);
+            }
+        }
+
+        // ─── Initialize ───
+        setFaceState('idle');
+        connectToServer();
+        loadInferenceSettings();
+
+        // ─── Inference settings ───
+        const externalIpInput = document.getElementById('external-ip');
+        const externalPortInput = document.getElementById('external-port');
+        const externalModelInput = document.getElementById('external-model');
+        const inferenceModeDisplay = document.getElementById('inference-mode');
+        const saveInferenceBtn = document.getElementById('save-inference-btn');
+
+        async function loadInferenceSettings() {
+            try {
+                const resp = await fetch('/api/inference-settings');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                inferenceModeDisplay.textContent = data.provider || 'local';
+                if (data.external_url) {
+                    const urlParts = data.external_url.replace('http://', '').replace('/v1', '').split(':');
+                    externalIpInput.value = urlParts[0] || '';
+                    externalPortInput.value = urlParts[1] || '13305';
+                }
+                externalModelInput.value = data.external_model || '';
+            } catch (e) {
+                console.error('Failed to load inference settings:', e);
+            }
+        }
+
+        saveInferenceBtn.addEventListener('click', async () => {
+            saveInferenceBtn.textContent = 'Saving...';
+            saveInferenceBtn.style.pointerEvents = 'none';
+            try {
+                const url = `http://${externalIpInput.value}:${externalPortInput.value}/v1`;
+                const resp = await fetch('/api/inference-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        external_url: url,
+                        external_model: externalModelInput.value,
+                        provider: 'external',
+                    }),
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    inferenceModeDisplay.textContent = data.provider;
+                    saveInferenceBtn.textContent = '✓ Saved';
+                    saveInferenceBtn.style.background = 'rgba(74, 222, 128, 0.3)';
+                    setTimeout(() => {
+                        saveInferenceBtn.textContent = 'Save Inference Settings';
+                        saveInferenceBtn.style.background = '';
+                        saveInferenceBtn.style.pointerEvents = '';
+                    }, 2000);
+                } else {
+                    saveInferenceBtn.textContent = 'Failed';
+                    setTimeout(() => {
+                        saveInferenceBtn.textContent = 'Save Inference Settings';
+                        saveInferenceBtn.style.pointerEvents = '';
+                    }, 2000);
+                }
+            } catch (e) {
+                console.error('Failed to save inference settings:', e);
+                saveInferenceBtn.textContent = 'Error';
+                setTimeout(() => {
+                    saveInferenceBtn.textContent = 'Save Inference Settings';
+                    saveInferenceBtn.style.pointerEvents = '';
+                }, 2000);
+            }
+        });
+
+        // ─── Keyboard shortcut for testing ───
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'f') setFaceState('happy');
+            if (e.key === 'c') setFaceState('confused');
+            if (e.key === 't') setFaceState('thinking');
+            if (e.key === 'l') setFaceState('listening');
+            if (e.key === 'i') setFaceState('idle');
+            if (e.key === 's') toggleSettings();
+        });
+
+        // ─── Settings panel ───
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const clearContextBtn = document.getElementById('clear-context-btn');
+
+        function toggleSettings() {
+            settingsPanel.classList.toggle('visible');
+            if (settingsPanel.classList.contains('visible')) {
+                loadContextStats();
+            }
+        }
+
+        settingsBtn.addEventListener('click', toggleSettings);
+
+        // Close panel when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+                settingsPanel.classList.remove('visible');
+            }
+        });
+
+        async function loadContextStats() {
+            try {
+                const resp = await fetch('/api/context-stats');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                document.getElementById('stats-turns').textContent = data.turns || '-';
+                document.getElementById('stats-messages').textContent = data.message_count || '-';
+                document.getElementById('stats-max-turns').textContent = data.max_turns || '-';
+                document.getElementById('stats-auto-clear').textContent = data.auto_clear ? 'ON' : 'OFF';
+            } catch (e) {
+                console.error('Failed to load context stats:', e);
+            }
+        }
+
+        clearContextBtn.addEventListener('click', async () => {
+            clearContextBtn.textContent = 'Clearing...';
+            clearContextBtn.style.pointerEvents = 'none';
+            try {
+                const resp = await fetch('/api/clear-context', { method: 'POST' });
+                if (resp.ok) {
+                    clearContextBtn.textContent = '✓ Cleared';
+                    clearContextBtn.classList.add('cleared');
+                    loadContextStats();
+                    setTimeout(() => {
+                        clearContextBtn.textContent = 'Clear Conversation';
+                        clearContextBtn.classList.remove('cleared');
+                        clearContextBtn.style.pointerEvents = '';
+                    }, 2000);
+                } else {
+                    clearContextBtn.textContent = 'Failed';
+                    setTimeout(() => {
+                        clearContextBtn.textContent = 'Clear Conversation';
+                        clearContextBtn.style.pointerEvents = '';
+                    }, 2000);
+                }
+            } catch (e) {
+                console.error('Failed to clear context:', e);
+                clearContextBtn.textContent = 'Error';
+                setTimeout(() => {
+                    clearContextBtn.textContent = 'Clear Conversation';
+                    clearContextBtn.style.pointerEvents = '';
+                }, 2000);
+            }
+        });
+
+        // Auto-refresh stats every 10s when panel is open
+        setInterval(() => {
+            if (settingsPanel.classList.contains('visible')) {
+                loadContextStats();
+            }
+        }, 10000);
+    </script>
+</body>
+</html>

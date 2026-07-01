@@ -1,0 +1,174 @@
+# Red Queen AI Companion — Configuration
+
+# --- Voice Pipeline ---
+audio:
+  # whisper.cpp path (will be built from source on Pi)
+  whisper_path: "/home/daveealex/ai-companion/whisper-cli"
+  # whisper.cpp model: tiny.en, base.en, small.en, tiny, base, small
+  whisper_model: "tiny"
+  whisper_threads: 6          # Pi 5 has 4+4 cores, use 6 for multithreading
+  whisper_sample_rate: 16000
+  
+  # Piper TTS path
+  piper_path: "/usr/local/bin/piper"
+  piper_voice: "en_US-amy-low"   # Good quality, low latency
+  piper_espeak_data: "/home/daveealex/piper/espeak-ng-data"
+  piper_model_path: "/home/daveealex/.local/share/piper/voices/en_US-amy-low.onnx"
+  piper_length_scale: 1.0         # Speech rate (lower = faster)
+  piper_noise_scale: 0.667
+  piper_noise_w: 0.8
+  
+  # VAD settings
+  vad_threshold: 0.35           # Silence threshold (0.0-1.0, lower = more sensitive)
+  vad_speech_threshold: 0.3     # Minimum speech confidence
+  vad_min_speech_ms: 300        # Minimum speech duration to trigger (ms)
+  vad_min_silence_ms: 800       # Silence before stopping recording (ms)
+  vad_buffer_ms: 500            # Pre-roll buffer (ms)
+  sample_rate: 16000
+  channels: 1
+  
+  # Audio recording
+  recording_duration: 5000      # Max recording duration (ms) after speech detected
+
+# --- LLM / Backend ---
+llm:
+  # Primary provider: "hermes" or "external"
+  # "hermes" = local Lemonade on Pi (slow but works)
+  # "external" = remote Lemonade server (faster)
+  provider: "hermes"
+  
+  # Hermes (local Pi Lemonade) settings
+  hermes_api_url: "http://192.168.1.109:13305/v1"
+  hermes_model: "Holo-3.1-4B-Q6_K-GGUF-Q6_K"
+  
+  # External inference server (Lemonade on another machine)
+  # Fill in IP and port of your remote Lemonade instance
+  external_url: "http://192.168.1.X:13305/v1"     # Replace with actual IP
+  external_model: "Qwen3.6-27B-MTP-GGUF-Q4_K_M"   # Replace with actual model
+  external_enabled: false                          # Set true when you have a remote server
+
+  # Fallback: Strix Halo (backup)
+  # local_url: "http://192.168.1.137:13305/v1"
+  # local_model: "Qwen3.6-35B-A3B-MTP-GGUF"
+
+  # General LLM settings
+  max_tokens: 500
+  temperature: 0.7
+  top_p: 0.9
+  system_prompt_file: "assets/system_prompt.md"
+  
+  # Context management
+  max_conversation_turns: 20      # Auto-trim after this many turns (user+assistant pairs)
+  auto_clear: true                # Enable automatic context trimming
+
+# --- Safety Gate ---
+safety:
+  enabled: true
+  default_mode: "child"           # Default to child-safe when classification fails
+  use_face_recognition: false     # Set true when face_recognition + dlib are installed
+  use_voice_classifier: true      # F0-based speaker classification (always on)
+  
+  # Voice classifier thresholds
+  voice:
+    adult_min_f0: 75              # Hz below this = adult
+    child_max_f0: 225             # Hz above this = child
+    ambiguous_range: 20           # Hz buffer zone (between adult and child)
+    min_samples: 30               # Minimum F0 samples for classification
+  
+  # Face recognition settings
+  face:
+    known_adults:
+      - name: "David"
+        enrollment_file: "safety/enrollments/david.npy"
+    known_children:
+      - name: "Isabella"
+        enrollment_file: "safety/enrollments/isabella.npy"
+      - name: "Samuele"
+        enrollment_file: "safety/enrollments/samuele.npy"
+    face_tolerance: 0.6           # Higher = more lenient matching
+
+# --- Camera (Future Module) ---
+camera:
+  enabled: false                # Set to true when camera is physically installed
+  type: "usb"                   # Options: picamera, usb (for standard USB cams)
+  resolution: "1280x720"        # Higher = slower inference, better quality
+  stream_url: "http://localhost:5000/cam/stream"  # MJPEG stream for face
+  snapshot_url: "http://localhost:5000/cam/snapshot"  # Single JPEG for VLM analysis
+  capture_format: "jpeg"        # jpeg, png (jpeg is smaller/faster for LLMs)
+  
+  # VLM (Vision Model) settings for when camera is active
+  vision_prompt: "Describe what you see in this image in one short sentence."
+
+# --- Face / Display ---
+face:
+  window_width: 400
+  window_height: 300
+  window_title: "Red Queen"
+  refresh_rate: 30              # FPS
+  
+  # Eye settings
+  eye_color: (255, 0, 51)       # Red eyes
+  pupil_color: (0, 0, 0)        # Black pupils
+  eye_size: 40                  # Radius
+  pupil_size: 15
+  eye_spacing: 120              # Distance between eyes
+  
+  # Mouth settings
+  mouth_color: (255, 0, 51)
+  mouth_width: 80
+  mouth_height: 20
+  
+  # Blink settings
+  blink_interval_min: 2         # seconds
+  blink_interval_max: 6         # seconds
+  blink_duration: 150           # ms
+  
+  # Background color
+  bg_color: (10, 10, 15)        # Very dark, almost black
+
+# --- Home Assistant ---
+ha:
+  enabled: true
+  url: "http://localhost:8123"
+  token: "eyJhbG...MAsE"
+  
+  # Entities to monitor (optional)
+  watch_entities:
+    - sensor.temperature       # Temperature sensor
+    - binary_sensor.motion     # Motion sensor
+    - light.living_room        # Living room light
+  
+  # HA voice commands (map to actions)
+  ha_commands:
+    - pattern: "turn on (?:the )?(.*)"
+      action: "turn_on"
+    - pattern: "turn off (?:the )?(.*)"
+      action: "turn_off"
+    - pattern: "what is (?:the )?(.*)"
+      action: "check_state"
+    - pattern: "how (?:is|are) (?:the )?(.*)"
+      action: "check_state"
+
+# --- Web Display (Face + Content) ---
+web:
+  server_url: "http://localhost:5000"
+  kiosk_browser: "chromium-browser"
+  # Kiosk launch: chromium-browser --kiosk --no-first-run --disable-features=TranslateUI http://localhost:5000
+
+# --- System ---
+system:
+  hostname: "ai-companion"
+  auto_start: true
+  log_level: "INFO"           # DEBUG, INFO, WARNING, ERROR
+  log_file: "logs/companion.log"
+  command_port: 9999
+  
+  # GPIO sensors (future)
+  gpio:
+    enabled: false
+    motion_pin: 17            # PIR sensor
+    distance_trig: 27         # Ultrasonic trigger
+    distance_echo: 22         # Ultrasonic echo
+    rgb_red: 12
+    rgb_green: 16
+    rgb_blue: 20

@@ -1,0 +1,37 @@
+# AI Companion — Python Dependencies
+# Install on Pi: pip3 install -r requirements.txt
+
+# Core
+pyyaml>=6.0
+pydub>=0.25.1
+aiohttp>=3.9.0             # Async HTTP (LLM client, face API)
+flask>=3.0.0               # Web server for face
+flask-cors>=4.0.0          # CORS for face API
+
+# Audio
+sounddevice>=0.4.6          # Mic input (PortAudio)
+scipy>=1.11.0               # Audio processing
+
+# VAD (Voice Activity Detection)
+onnxruntime>=1.16.0         # For Silero VAD
+
+# TTS
+# Piper is installed as a binary, no Python deps needed
+
+# STT
+# whisper.cpp is built from C++, no Python deps needed
+
+# Face / Display
+pygame>=2.5.0               # Pygame for face rendering
+
+# LLM Client
+openai>=1.10.0              # OpenAI-compatible API client (Hermes)
+
+# Home Assistant
+homeassistant>=2023.12.0    # HA API client
+aiohttp>=3.9.0              # Async HTTP for HA
+
+# Utilities
+colorama>=0.4.6             # Colored terminal output (debug)
+rich>=13.0.0                # Pretty logging (debug)
+numpy>=1.26.0               # Audio processing
