@@ -230,6 +230,13 @@ class CompanionOrchestrator:
         self.safety = SafetyGate(config.get("safety", {}))
         logger.info(f"Safety gate: {'enabled' if self.safety.enabled else 'disabled'} (default: {self.safety.default_mode} mode)")
 
+        # Wake word
+        self.wake_word = config.get("audio", {}).get("wake_word", "").strip().lower()
+        if self.wake_word:
+            logger.info(f"Wake word: \"{self.wake_word}\"")
+        else:
+            logger.info("No wake word — always listening")
+
     def clear_context(self):
         """Clear the LLM conversation history."""
         self.llm.reset_conversation()
@@ -336,6 +343,32 @@ class CompanionOrchestrator:
                 return
 
             logger.info(f"You said: {text}")
+
+            # Check wake word
+            if self.wake_word:
+                text_lower = text.strip().lower()
+                # Strip common punctuation
+                cleaned = text_lower.replace(".", "").replace("!", "").replace("?", "").replace(",", "")
+                if self.wake_word not in cleaned:
+                    logger.info(f"Wake word \"{self.wake_word}\" not detected, ignoring.")
+                    await self.face.set_state("idle")
+                    return
+                logger.info("Wake word detected!")
+                # Strip the wake word from the actual command
+                command_text = cleaned.replace(self.wake_word, "", 1).strip()
+                if command_text:
+                    text = command_text
+                    logger.info(f"Command: {text}")
+                else:
+                    # Just said wake word with no command — acknowledge
+                    if self.current_speaker_mode == "adult":
+                        ack = "Yes? What do you require?"
+                    else:
+                        ack = "Yes? I'm listening!"
+                    await self.face.set_state("speaking")
+                    self.tts.speak(ack)
+                    await self.face.set_state("idle")
+                    return
 
             # 3. Classify speaker from audio
             if audio_bytes is not None:
