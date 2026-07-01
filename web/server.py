@@ -225,8 +225,13 @@ def context_stats():
         with urllib.request.urlopen(f"{orchestrator_host}/api/context-stats", timeout=5) as resp:
             return jsonify(json.loads(resp.read()))
     except Exception as e:
-        logger.error(f"Failed to get context stats: {e}")
-        return jsonify({'error': str(e)}), 500
+        # Gracefully return defaults if orchestrator isn't available
+        return jsonify({
+            'turns': 0,
+            'tokens_used': 0,
+            'context_window': 0,
+            'available': False
+        })
 
 
 @app.route('/api/inference-settings', methods=['GET', 'POST'])
