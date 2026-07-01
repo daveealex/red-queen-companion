@@ -13,7 +13,8 @@ audio:
   piper_path: "/usr/local/bin/piper"
   piper_voice: "en_US-amy-low"   # Good quality, low latency
   piper_espeak_data: "/home/daveealex/piper/espeak-ng-data"
-  piper_model_path: "/home/daveealex/.local/share/piper/voices/en_US-amy-low.onnx"
+  # Custom Red Queen voice (copy from voice/ directory to piper dir)
+  piper_model_path: "/home/daveealex/ai-companion/voice/redqueen_v4.onnx"
   piper_length_scale: 1.0         # Speech rate (lower = faster)
   piper_noise_scale: 0.667
   piper_noise_w: 0.8
